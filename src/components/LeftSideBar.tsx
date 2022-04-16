@@ -1,7 +1,7 @@
+import SelectedWordContext from "contexts/SelectedWordContext";
 import { useContext, useEffect, useState } from "react";
 import { MdKeyboardArrowLeft, MdKeyboardArrowRight } from "react-icons/md";
-import { SelectedWordContext } from "../App";
-import { globalDatabases, DictionaryEntry, ObjectStore, Translation, WordKnowledge } from "../util/db";
+import { globalDatabases, DictionaryEntry, ObjectStore, WordKnowledge } from "../util/db";
 import { instanceofTranslationError, translate, TranslationError } from "../util/translator";
 
 export function LeftSideBar() {
@@ -34,6 +34,9 @@ function LeftSideBarEntry() {
       return
     }
     const translate_and_set_entry = async () => {
+      if (selectedWord === null) {
+        return
+      }
       const dictionary_entry = await translate(selectedWord, "nl")
       if (instanceofTranslationError(dictionary_entry)) {
         setDictionaryEntry(() => undefined)
@@ -43,6 +46,9 @@ function LeftSideBarEntry() {
     }
 
     const set_word_knowledge = async () => {
+      if (selectedWord === null) {
+        return
+      }
       const word_knowledge: WordKnowledge = (await globalDatabases?.get("word_knowledge", selectedWord)) ||
         { word: selectedWord, knowledge: 1 }
       setWordKnowledge(() => word_knowledge)
@@ -57,25 +63,13 @@ function LeftSideBarEntry() {
       {dictionaryEntry !== undefined && <div className="children:m-10">
         <div>
           <span className="pr-4 text-2xl font-bold text-black">{dictionaryEntry.word}</span>
-          <span className="text-sm font-light text-black">{`[${dictionaryEntry.class}]`}</span>
-          <span className="text-sm font-light text-black">{`[${dictionaryEntry.pronunciation}]`}</span>
         </div>
         <div>
           <p className="font-semibold"> Translations </p>
-          {dictionaryEntry.translations.map((t, i) => <div key={i}><LeftSideBarTranslation translation={t} /></div>)}
+          {dictionaryEntry.translations.map((t, i) => <div key={i}>{t}</div>)}
         </div>
         <LeftSideBarWordKnowledge wordKnowledge={wordKnowledge as WordKnowledge} />
       </div>}
-    </>
-  )
-}
-
-function LeftSideBarTranslation({ translation }: { translation: Translation }) {
-  return (
-    <>
-      {translation.translations.map((t, i) => <span key={i} className="text-black">{`${i === 0 ? "" : ", "}${t}`}</span>)}
-      {translation.examples.map((t, i) => <p key={i} className="text-sm font-thin">{t.text}</p>)}
-      {translation.examples.map((t, i) => <p key={i} className="text-sm font-thin">{t.translation}</p>)}
     </>
   )
 }

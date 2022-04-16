@@ -1,11 +1,14 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import './App.css';
-import { MdDownload, MdUpload } from "react-icons/md";
-import { LeftSideBar } from './components/LeftSideBar';
-import { downloadDatabases, setupGlobalDatabases, uploadDatabases, DictionaryEntry } from './util/db';
-import CircularButton from './components/CircularButton';
+import { MdHome, MdSettings } from "react-icons/md";
+import { BsServer } from "react-icons/bs";
+import { setupGlobalDatabases, DictionaryEntry } from 'util/db';
+import CircularButton from 'components/CircularButton';
+import { Home } from 'components/pages/Home';
+import SelectedPageContext, { Page } from 'contexts/SelectedPageContext';
+import { Settings } from 'components/pages/Settings';
+import SelectedWordContext from 'contexts/SelectedWordContext';
 
-export const SelectedWordContext: React.Context<any> = createContext(undefined);
 
 const mostUsedWords = `als Ik zijn dat hij was voor op zijn met ze zijn bij een hebben deze van door heet woord maar wat sommige is het u of had de van aan en een in we kan uit andere waren die doen hun tijd indien zal hoe zei een elk vertellen doet set drie willen lucht goed ook spelen klein end zetten thuis lezen de hand poort grote spell toevoegen zelfs land hier moet grote hoog dergelijke volgen act waarom vragen mannen verandering ging licht soort uitgeschakeld nodig hebben huis afbeelding proberen ons weer dier punt moeder wereld dichtbij bouwen zelf aarde vader een
 nieuwe werk deel nemen krijgen plaats gemaakt wonen waar na terug weinig alleen ronde man jaar kwam Show elke goed mij geven onze onder naam zeer door gewoon vorm zin grote denken zeggen helpen laag lijn verschillen beurt oorzaak veel betekenen voor verhuizing rechts jongen oude ook hetzelfde ze alle er wanneer omhoog gebruiken uw manier over veel dan hen schrijven zou zoals dus deze haar lang maken ding zien hem twee heeft kijken meer dag kon gaan komen deed aantal klinken geen meest mensen mijn meer dan weten water dan roep eerste die kan naar beneden kant geweest nu vinden hoofd staan
@@ -19,8 +22,8 @@ eerder menigte maïs vergelijken gedicht koord bell afhangen vlees wrijven buis 
 zilver dank tak wedstrijd achtervoegsel vooral vijg bang reusachtig zus staal bespreken vooruit gelijkaardige begeleiden ervaring partituur appel gekocht geleid toonhoogte coat massa kaart band touw slip win dromen avond voorwaarde voer gereedschap totaal elementaire geur dal noch dubbel zitje blijven blokkeren grafiek hoed verkopen succes bedrijf aftrekken evenement bijzonder deal zwemmen termijn tegengesteld vrouw schoen schouder spreiding regelen kamp uitvinden katoen geboren bepalen quart negen vrachtwagen geluidsoverlast niveau kans verzamelen winkel rekken gooien glans pand column molecuul selecteren mis grijs herhaal vereisen brede bereiden zout neus meervoud woede vordering werelddeel
 `
 export default function App() {
-  const [text, _] = useState(mostUsedWords)
-  const [selectedWord, setSelectedWord] = useState()
+  const [selectedWord, setSelectedWord] = useState(null as null | string)
+  const [selectedPage, setSelectedPage] = useState(Page.Settings)
 
   useEffect(() => {
     setupGlobalDatabases()
@@ -28,101 +31,33 @@ export default function App() {
 
   return (
     <SelectedWordContext.Provider value={[selectedWord, setSelectedWord]}>
-      <Header />
-      <div className="flex flex-row w-4/5">
-        <Reader text={text} />
-        <LeftSideBar />
-      </div>
+      <SelectedPageContext.Provider value={[selectedPage, setSelectedPage]}>
+        <Header />
+        <div className="flex flex-col w-[100%] items-center p-5">
+          <div className="w-4/5 m-0 p-0">
+            {selectedPage === Page.Home && <Home />}
+            {selectedPage === Page.Settings && <Settings />}
+          </div>
+        </div>
+      </SelectedPageContext.Provider>
     </SelectedWordContext.Provider>
   );
 }
 
-type TranslationEntryState = DictionaryEntry | undefined
-type TranslationEntrySetter = (e: TranslationEntryState) => TranslationEntryState
-type SetSelectedTE = ((tes: TranslationEntrySetter) => void)
-
-function Reader({ text }: { text: string }) {
-  const lines = text.split("\n");
-  return (
-    <div className="flex flex-col gap-y-2 mx-auto max-w-lg text-xl">
-      {lines.map((line, i) => <ReaderLine key={i} line={line} />)}
-    </div>
-  );
-}
-
-function ReaderLine({ line }: { line: string }) {
-  const words = line.split(" ").filter(x => x !== "")
-  return (
-    <div className="flex flex-row flex-wrap gap-x-1">
-      {words.map((word, i) => (
-        <div key={i}> <ReaderWord word={word} /> </div>
-      ))}
-    </div>
-  );
-}
-
-function ReaderWord({ word }: { word: string }) {
-  const [selectedWord, setSelectedWord] = useContext(SelectedWordContext)
-  return (
-    <div className="bg-green-200 rounded border-2 border-transparent hover:border-green-400 hover:cursor-pointer"
-      onClick={() => {
-        setSelectedWord(() => word)
-      }}
-    >
-      {word}
-    </div>
-  );
-}
-
-function DownloadDatabase() {
-  return (
-    <CircularButton onClick={() => {
-      downloadDatabases()
-    }}>
-      <MdDownload />
-    </CircularButton>
-  )
-}
-
-function UploadDatabase() {
-  return (
-    <>
-      <CircularButton onClick={() => {
-      }}>
-        <MdUpload />
-      </CircularButton>
-      <form>
-        <input type="file" onChange={(e: any) => {
-          const file = e.target.files[0]
-          const reader = new FileReader();
-          reader.onload = ({ target }: any) => {
-            uploadDatabases(target.result)
-          }
-          reader.readAsText(file)
-        }} />
-      </form>
-    </>
-  )
-}
-
 function Header() {
-  const [key, setKey] = useState(localStorage.getItem("apikey-lexicala") ?? "")
-  const keyInputRef = useRef(null)
-  useEffect(() => {
-    localStorage.setItem("apikey-lexicala", key)
-  }, [key])
+  const [_, setSelectedPage] = useContext(SelectedPageContext)
+
   return (
     <div className="flex gap-5 items-center p-5 mb-4 h-16 bg-white shadow-lg w-100">
-      <input className="border-2"
-        ref={keyInputRef}
-        placeholder="Api Key"
-        defaultValue={key}
-        onChange={(event) => {
-          localStorage.setItem("apikey-lexicala", event.currentTarget.value)
-        }}
-      />
-      <DownloadDatabase />
-      <UploadDatabase />
+      <CircularButton onClick={() => { setSelectedPage((_) => Page.Home) }}>
+        <MdHome />
+      </CircularButton>
+      <CircularButton onClick={() => { setSelectedPage((_) => Page.Settings) }}>
+        <MdSettings />
+      </CircularButton>
+      <CircularButton onClick={() => { setSelectedPage((_) => Page.Database) }}>
+        <BsServer className="scale-75" />
+      </CircularButton>
     </div>
   )
 }

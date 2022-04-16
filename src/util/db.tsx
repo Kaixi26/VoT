@@ -1,15 +1,8 @@
 import { IDBPDatabase, openDB } from "idb"
 
-export interface Translation {
-  translations: string[]
-  examples: { text: string, translation: string }[]
-}
-
 export interface DictionaryEntry {
   word: string,
-  pronunciation: string | undefined
-  class: string | undefined
-  translations: Translation[]
+  translations: string[]
 }
 
 export interface WordKnowledge {
