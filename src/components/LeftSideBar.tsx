@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { MdKeyboardArrowLeft, MdKeyboardArrowRight } from "react-icons/md";
-import { lexicala_entry, lexicala_entry_to_translation, Translation } from "../util/translator";
-import CircularButton from "./CircularButton";
+import { SelectedWordContext } from "../App";
+import { globalDatabases, DictionaryEntry, ObjectStore, Translation, WordKnowledge } from "../util/db";
+import { instanceofTranslationError, translate, TranslationError } from "../util/translator";
 
 export function LeftSideBar() {
   const [active, setActive] = useState(true)
@@ -9,7 +10,7 @@ export function LeftSideBar() {
   const visibility = active === true ? "" : "invisible"
   const Arrow = active === true ? <MdKeyboardArrowRight /> : <MdKeyboardArrowLeft />
   return (
-    <div className={`flex w-fit gap-5 transform-gpu duration-150 ease-in-out ${translation} h-3/4`}>
+    <div className={`flex gap-5 h-3/4 duration-150 ease-in-out transform-gpu w-fit ${translation}`}>
       {/*<CircularButton
         onClick={() => {
           setActive((active) => active)
@@ -17,38 +18,75 @@ export function LeftSideBar() {
       >
         {Arrow}
       </CircularButton>*/}
-      <div className={`p-6 w-sm bg-white rounded-xl shadow-lg flex items-center space-x-4 overflow-auto`}>
-        <LeftSideBarTranslation translation={lexicala_entry_to_translation(lexicala_entry)} />
+      <div className={`overflow-auto p-6 space-x-4 w-96 h-96 bg-white rounded-xl shadow-lg`}>
+        <LeftSideBarEntry />
       </div>
     </div>
   );
 }
 
+function LeftSideBarEntry() {
+  const [selectedWord, _] = useContext(SelectedWordContext)
+  const [dictionaryEntry, setDictionaryEntry] = useState(undefined as (DictionaryEntry | undefined))
+  const [wordKnowledge, setWordKnowledge] = useState(undefined as (WordKnowledge | undefined))
+  useEffect(() => {
+    if (selectedWord === undefined) {
+      return
+    }
+    const translate_and_set_entry = async () => {
+      const dictionary_entry = await translate(selectedWord, "nl")
+      if (instanceofTranslationError(dictionary_entry)) {
+        setDictionaryEntry(() => undefined)
+      } else {
+        setDictionaryEntry(() => dictionary_entry as DictionaryEntry)
+      }
+    }
+
+    const set_word_knowledge = async () => {
+      const word_knowledge: WordKnowledge = (await globalDatabases?.get("word_knowledge", selectedWord)) ||
+        { word: selectedWord, knowledge: 1 }
+      setWordKnowledge(() => word_knowledge)
+    }
+
+    translate_and_set_entry()
+    set_word_knowledge()
+  }, [selectedWord])
+
+  return (
+    <>
+      {dictionaryEntry !== undefined && <div className="children:m-10">
+        <div>
+          <span className="pr-4 text-2xl font-bold text-black">{dictionaryEntry.word}</span>
+          <span className="text-sm font-light text-black">{`[${dictionaryEntry.class}]`}</span>
+          <span className="text-sm font-light text-black">{`[${dictionaryEntry.pronunciation}]`}</span>
+        </div>
+        <div>
+          <p className="font-semibold"> Translations </p>
+          {dictionaryEntry.translations.map((t, i) => <div key={i}><LeftSideBarTranslation translation={t} /></div>)}
+        </div>
+        <LeftSideBarWordKnowledge wordKnowledge={wordKnowledge as WordKnowledge} />
+      </div>}
+    </>
+  )
+}
+
 function LeftSideBarTranslation({ translation }: { translation: Translation }) {
   return (
-    <div className="children:m-10">
-      <div className="flex flex-row gap-4">
-        <div className="font-bold text-black text-2xl">niet</div>
-        <div className="text-thin text-xs self-center">{`[${translation.pronunciation}]`}</div>
-      </div>
-      <div>
-        <p className="font-semibold"> Translations </p>
-        {translation.translations.map((t, i) => <p key={i} className="text-black">{t}</p>)}
-      </div>
-      <div>
-        <p className="font-semibold"> Anthonyms </p>
-        {translation.antonyms.map((a, i) => <p key={i} className="text-black">{a}</p>)}
-      </div>
-      <div>
-        <p className="font-semibold"> Example Phrases </p>
-        <div className="flex flex-col gap-3">
-          {translation.examples.map((a, i) => <div key={i}>
-            <div className="text-black">{a.text}</div>
-            <div className="text-black">{a.translation}</div>
-          </div>)}
-        </div>
-      </div>
+    <>
+      {translation.translations.map((t, i) => <span key={i} className="text-black">{`${i === 0 ? "" : ", "}${t}`}</span>)}
+      {translation.examples.map((t, i) => <p key={i} className="text-sm font-thin">{t.text}</p>)}
+      {translation.examples.map((t, i) => <p key={i} className="text-sm font-thin">{t.translation}</p>)}
+    </>
+  )
+}
 
+function LeftSideBarWordKnowledge({ wordKnowledge }: { wordKnowledge: WordKnowledge }) {
+  return (
+    <div onClick={async (_) => {
+      const word_knowledge = { word: wordKnowledge.word, knowledge: (wordKnowledge.knowledge + 1) % 5 } as WordKnowledge
+      console.debug(await globalDatabases?.put(ObjectStore.WordKnowledge, word_knowledge))
+    }}>
+      {wordKnowledge && wordKnowledge.knowledge}
     </div>
-  );
+  )
 }

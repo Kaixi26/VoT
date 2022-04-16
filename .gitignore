@@ -1,0 +1,4 @@
+build/
+.direnv/
+.envrc
+node_modules/
