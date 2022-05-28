@@ -5,8 +5,10 @@ import CircularButton from "components/CircularButton";
 export default function Database() {
   return (
     <div>
-      <DownloadDatabase />
-      <UploadDatabase />
+      <div className="flex flex-row gap-5">
+        <DownloadDatabase />
+        <UploadDatabase />
+      </div>
     </div>
   )
 }
@@ -16,18 +18,17 @@ function DownloadDatabase() {
     <CircularButton onClick={() => {
       downloadDatabases()
     }}>
-      <MdDownload />
+      <MdDownload className="scale-[2]" />
     </CircularButton>
   )
 }
-
 function UploadDatabase() {
   return (
     <label>
-      <CircularButton>
-        <MdUpload />
+      <CircularButton >
+        <MdUpload className="scale-[2]" />
       </CircularButton>
-      <input type="file" hidden onChange={(e: any) => {
+      <input className="hidden" type="file" onChange={(e: any) => {
         const file = e.target.files[0]
         const reader = new FileReader();
         reader.onload = ({ target }: any) => {

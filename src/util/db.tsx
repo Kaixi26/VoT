@@ -7,7 +7,7 @@ export interface DictionaryEntry {
 
 export interface WordKnowledge {
   word: string,
-  knowledge: 0 | 1 | 2 | 3 | 4
+  knowledge: -1 | 0 | 1 | 2 | 3 | 4 | 5
 }
 
 export var globalDatabases = null as IDBPDatabase<unknown> | null
@@ -57,4 +57,12 @@ export async function setupGlobalDatabases(): Promise<void> {
       db.createObjectStore(ObjectStore.WordKnowledge, { keyPath: "word" })
     },
   })
+}
+
+export async function getWordKnowledge(word: string): Promise<WordKnowledge> {
+  return (await globalDatabases?.get("word_knowledge", word)) ?? { word: word, knowledge: 0 }
+}
+
+export async function setWordKnowledge(wk: WordKnowledge): Promise<IDBValidKey | undefined> {
+  return await globalDatabases?.put("word_knowledge", wk)
 }

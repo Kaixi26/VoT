@@ -1,86 +1,75 @@
 import SelectedWordContext from "contexts/SelectedWordContext";
+import { useCallback } from "react";
 import { useContext, useEffect, useState } from "react";
-import { MdKeyboardArrowLeft, MdKeyboardArrowRight } from "react-icons/md";
-import { globalDatabases, DictionaryEntry, ObjectStore, WordKnowledge } from "../util/db";
-import { instanceofTranslationError, translate, TranslationError } from "../util/translator";
+import { MdRestoreFromTrash, MdCheck } from "react-icons/md";
 
 export function LeftSideBar() {
-  const [active, setActive] = useState(true)
-  const translation = active === true ? "" : "translate-x-full"
-  const visibility = active === true ? "" : "invisible"
-  const Arrow = active === true ? <MdKeyboardArrowRight /> : <MdKeyboardArrowLeft />
+  const [selectedWordKnowledge, setSelectedWordKnowledge] = useContext(SelectedWordContext)
+
+  const onKeyUp = useCallback((event: KeyboardEvent) => {
+    setSelectedWordKnowledge((wk) => {
+      if (wk.word === "") {
+        return wk
+      }
+      switch (event.key) {
+        case "1":
+        case "2":
+        case "3":
+        case "4":
+        case "5":
+          return { word: wk.word, knowledge: parseInt(event.key) as any }
+        case "0":
+        case "x":
+          return { word: wk.word, knowledge: -1 }
+      }
+      return wk
+    })
+  }, [])
+
+  useEffect(() => {
+    window.addEventListener('keyup', onKeyUp);
+    return (): void => {
+      window.removeEventListener('keydown', onKeyUp);
+    }
+  }, [])
+
   return (
-    <div className={`flex gap-5 h-3/4 duration-150 ease-in-out transform-gpu w-fit ${translation}`}>
-      {/*<CircularButton
-        onClick={() => {
-          setActive((active) => active)
-        }}
-      >
-        {Arrow}
-      </CircularButton>*/}
-      <div className={`overflow-auto p-6 space-x-4 w-96 h-96 bg-white rounded-xl shadow-lg`}>
+    <div className={"w-96"}>
+      {(selectedWordKnowledge.word !== "") && <div className={`overflow-auto p-6 space-x-4 w-[100%] bg-white rounded-xl shadow-lg min-h-96`}>
         <LeftSideBarEntry />
-      </div>
+      </div>}
     </div>
   );
 }
 
 function LeftSideBarEntry() {
-  const [selectedWord, _] = useContext(SelectedWordContext)
-  const [dictionaryEntry, setDictionaryEntry] = useState(undefined as (DictionaryEntry | undefined))
-  const [wordKnowledge, setWordKnowledge] = useState(undefined as (WordKnowledge | undefined))
-  useEffect(() => {
-    if (selectedWord === undefined) {
-      return
-    }
-    const translate_and_set_entry = async () => {
-      if (selectedWord === null) {
-        return
-      }
-      const dictionary_entry = await translate(selectedWord, "nl")
-      if (instanceofTranslationError(dictionary_entry)) {
-        setDictionaryEntry(() => undefined)
-      } else {
-        setDictionaryEntry(() => dictionary_entry as DictionaryEntry)
-      }
-    }
+  const [selectedWordKnowledge, _] = useContext(SelectedWordContext)
 
-    const set_word_knowledge = async () => {
-      if (selectedWord === null) {
-        return
-      }
-      const word_knowledge: WordKnowledge = (await globalDatabases?.get("word_knowledge", selectedWord)) ||
-        { word: selectedWord, knowledge: 1 }
-      setWordKnowledge(() => word_knowledge)
-    }
-
-    translate_and_set_entry()
-    set_word_knowledge()
-  }, [selectedWord])
-
-  return (
-    <>
-      {dictionaryEntry !== undefined && <div className="children:m-10">
-        <div>
-          <span className="pr-4 text-2xl font-bold text-black">{dictionaryEntry.word}</span>
-        </div>
-        <div>
-          <p className="font-semibold"> Translations </p>
-          {dictionaryEntry.translations.map((t, i) => <div key={i}>{t}</div>)}
-        </div>
-        <LeftSideBarWordKnowledge wordKnowledge={wordKnowledge as WordKnowledge} />
-      </div>}
-    </>
-  )
+  return <>
+    <div className="flex justify-center pb-5">
+      <span className="pr-4 text-2xl font-bold text-black">{selectedWordKnowledge.word}</span>
+    </div>
+    <div className="flex flex-grow-0 gap-2 justify-center">
+      {[-1, 1, 2, 3, 4, 5].map((i, key) => <LeftSideBarEntryButton key={key} index={i} />)}
+    </div>
+  </>
 }
 
-function LeftSideBarWordKnowledge({ wordKnowledge }: { wordKnowledge: WordKnowledge }) {
-  return (
-    <div onClick={async (_) => {
-      const word_knowledge = { word: wordKnowledge.word, knowledge: (wordKnowledge.knowledge + 1) % 5 } as WordKnowledge
-      console.debug(await globalDatabases?.put(ObjectStore.WordKnowledge, word_knowledge))
-    }}>
-      {wordKnowledge && wordKnowledge.knowledge}
+function LeftSideBarEntryButton({ index }: { index: Number }) {
+  const [{ word, knowledge }, setWordKnowledge] = useContext(SelectedWordContext)
+
+  const icon = (index === -1 && <MdRestoreFromTrash className="scale-125" />)
+    || (index === 5 && <MdCheck className="scale-125" />)
+    || String(index)
+  const bg = knowledge === index ? "bg-pink-300" : "bg-pink-100"
+  return <div
+    className={`flex justify-center items-center w-12 h-12 rounded-full border-2 border-black hover:cursor-pointer hover:bg-pink-400 ${bg}`}
+    onClick={async _ => {
+      setWordKnowledge({ word: word, knowledge: index as any })
+    }}
+  >
+    <div className="scale-125">
+      {icon}
     </div>
-  )
+  </div>
 }

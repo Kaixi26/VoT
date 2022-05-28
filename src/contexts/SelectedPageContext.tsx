@@ -1,9 +1,9 @@
 import React, { createContext } from "react"
 
 export enum Page {
-  Home,
-  Settings,
-  Database
+  Home = "Home",
+  Settings = "Settings",
+  Database = "Database"
 }
 
 const SelectedPageContext = createContext([
