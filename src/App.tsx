@@ -1,14 +1,16 @@
 import { useContext, useEffect, useRef, useState } from 'react';
-import './App.css';
+import 'App.css';
 import { MdHome, MdSettings } from "react-icons/md";
 import { BsFillHeartFill, BsServer } from "react-icons/bs";
-import { setupGlobalDatabases, DictionaryEntry, WordKnowledge } from 'util/db';
+import { setupGlobalDatabases, DictionaryEntry, WordKnowledge, getWordKnowledges, WordKnowledgeDB } from 'util/db';
 import CircularButton from 'components/CircularButton';
 import { Home } from 'components/pages/Home';
-import SelectedPageContext, { Page } from 'contexts/SelectedPageContext';
 import { Settings } from 'components/pages/Settings';
-import SelectedWordContext from 'contexts/SelectedWordContext';
 import Database from 'components/pages/Database';
+
+import { Provider } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
+import store, { dbSlice, Page, pageSlice } from 'store';
 
 
 const mostUsedWords = `als Ik zijn dat hij was voor op zijn met ze zijn bij een hebben deze van door heet woord maar wat sommige is het u of had de van aan en een in we kan uit andere waren die doen hun tijd indien zal hoe zei een elk vertellen doet set drie willen lucht goed ook spelen klein end zetten thuis lezen de hand poort grote spell toevoegen zelfs land hier moet grote hoog dergelijke volgen act waarom vragen mannen verandering ging licht soort uitgeschakeld nodig hebben huis afbeelding proberen ons weer dier punt moeder wereld dichtbij bouwen zelf aarde vader een
@@ -23,42 +25,49 @@ eerder menigte maïs vergelijken gedicht koord bell afhangen vlees wrijven buis 
 zilver dank tak wedstrijd achtervoegsel vooral vijg bang reusachtig zus staal bespreken vooruit gelijkaardige begeleiden ervaring partituur appel gekocht geleid toonhoogte coat massa kaart band touw slip win dromen avond voorwaarde voer gereedschap totaal elementaire geur dal noch dubbel zitje blijven blokkeren grafiek hoed verkopen succes bedrijf aftrekken evenement bijzonder deal zwemmen termijn tegengesteld vrouw schoen schouder spreiding regelen kamp uitvinden katoen geboren bepalen quart negen vrachtwagen geluidsoverlast niveau kans verzamelen winkel rekken gooien glans pand column molecuul selecteren mis grijs herhaal vereisen brede bereiden zout neus meervoud woede vordering werelddeel
 `
 export default function App() {
-  const [selectedWord, setSelectedWord] = useState({ word: "", knowledge: 0 } as WordKnowledge)
-  const [selectedPage, setSelectedPage] = useState(localStorage.getItem("page") as Page ?? Page.Home)
-  const set_selected_page: React.Dispatch<React.SetStateAction<Page>> = (get_new_page) => {
-    setSelectedPage((page) => {
-      const new_page = get_new_page instanceof Function ? get_new_page(page) : get_new_page
-      localStorage.setItem("page", new_page)
-      return new_page
-    })
-  }
-
   const [ready, setReady] = useState(false)
+
+  return <Provider store={store}>
+    {ready ? <Root /> : <Setup setReady={setReady} />}
+  </Provider>
+}
+
+function Setup({ setReady }: { setReady: React.Dispatch<React.SetStateAction<boolean>> }) {
+  const dispatch = useDispatch()
+
   useEffect(() => {
-    const setupDbs = async () => {
+    (async () => {
       await setupGlobalDatabases()
+      const wks = await getWordKnowledges()
+      dispatch(dbSlice.actions.assign(wks))
       setReady(() => true)
-    }
-    setupDbs()
+    })()
   }, [])
 
-  return (
-    <SelectedWordContext.Provider value={[selectedWord, setSelectedWord]}>
-      <SelectedPageContext.Provider value={[selectedPage, set_selected_page]}>
-        {ready && <div className="flex flex-col min-h-[100vh]">
-          <Header />
-          <div className="flex flex-col w-[100%] items-center p-5 flex-grow">
-            <div className="p-0 m-0 w-4/5">
-              {selectedPage === Page.Home && <Home />}
-              {selectedPage === Page.Settings && <Settings />}
-              {selectedPage === Page.Database && <Database />}
-            </div>
-          </div>
-          <Footer />
-        </div>}
-      </SelectedPageContext.Provider>
-    </SelectedWordContext.Provider>
-  );
+  return <></>
+}
+
+function Root() {
+  return <div className="flex flex-col min-h-[100vh]">
+    <Header />
+    <div className="flex flex-col w-[100%] items-center p-5 flex-grow">
+      <Pages />
+    </div>
+    <Footer />
+  </div>
+}
+
+function Pages() {
+  const page: Page = useSelector((state: any) => state.page.value)
+
+  switch (page) {
+    case Page.Settings:
+      return <Settings />
+    case Page.Database:
+      return <Database />
+    default:
+      return <Home />
+  }
 }
 
 function HeaderButton({ children, ...rest }: { children: any, [key: string]: any }) {
@@ -72,21 +81,19 @@ function HeaderButton({ children, ...rest }: { children: any, [key: string]: any
 }
 
 function HeaderButtons() {
-  const [_, setSelectedPage] = useContext(SelectedPageContext)
+  const dispatch = useDispatch()
 
-  return (
-    <div className="flex gap-2 justify-center items-center mr-auto ml-auto">
-      <HeaderButton onClick={() => { setSelectedPage((_) => Page.Home) }}>
-        <MdHome className="scale-[2]" />
-      </HeaderButton>
-      <HeaderButton onClick={() => { setSelectedPage((_) => Page.Settings) }}>
-        <MdSettings className="scale-[2]" />
-      </HeaderButton>
-      <HeaderButton onClick={() => { setSelectedPage((_) => Page.Database) }}>
-        <BsServer className="scale-[1.5]" />
-      </HeaderButton>
-    </div>
-  )
+  return <div className="flex gap-2 justify-center items-center mr-auto ml-auto">
+    <HeaderButton onClick={() => { dispatch(pageSlice.actions.update(Page.Home)) }}>
+      <MdHome className="scale-[2]" />
+    </HeaderButton>
+    <HeaderButton onClick={() => { dispatch(pageSlice.actions.update(Page.Settings)) }}>
+      <MdSettings className="scale-[2]" />
+    </HeaderButton>
+    <HeaderButton onClick={() => { dispatch(pageSlice.actions.update(Page.Database)) }}>
+      <BsServer className="scale-[1.5]" />
+    </HeaderButton>
+  </div>
 }
 
 function Header() {

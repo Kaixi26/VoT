@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@asmagin/google-translate-api": "^8.0.2",
+    "@reduxjs/toolkit": "^1.8.2",
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.0.1",
     "@testing-library/user-event": "^13.5.0",
@@ -24,6 +25,7 @@
     "react-app-rewired": "^2.2.1",
     "react-dom": "^18.0.0",
     "react-icons": "^4.3.1",
+    "react-redux": "^8.0.2",
     "react-scripts": "^5.0.1",
     "serve": "^13.0.2",
     "stream-browserify": "^3.0.0",

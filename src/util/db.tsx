@@ -5,9 +5,15 @@ export interface DictionaryEntry {
   translations: string[]
 }
 
+export type Knowledge = -1 | 0 | 1 | 2 | 3 | 4 | 5
+
 export interface WordKnowledge {
   word: string,
-  knowledge: -1 | 0 | 1 | 2 | 3 | 4 | 5
+  knowledge: Knowledge
+}
+
+export interface WordKnowledgeDB {
+  [key: string]: WordKnowledge
 }
 
 export var globalDatabases = null as IDBPDatabase<unknown> | null
@@ -59,10 +65,26 @@ export async function setupGlobalDatabases(): Promise<void> {
   })
 }
 
+export async function getWordKnowledges(): Promise<WordKnowledgeDB> {
+  const ret: WordKnowledgeDB = {}
+
+  let cursor = await globalDatabases?.transaction("word_knowledge").store.openCursor()
+  while (cursor) {
+    ret[cursor.key as string] = cursor.value
+    cursor = await cursor.continue()
+  }
+
+  return ret
+}
+
 export async function getWordKnowledge(word: string): Promise<WordKnowledge> {
   return (await globalDatabases?.get("word_knowledge", word)) ?? { word: word, knowledge: 0 }
 }
 
 export async function setWordKnowledge(wk: WordKnowledge): Promise<IDBValidKey | undefined> {
   return await globalDatabases?.put("word_knowledge", wk)
+}
+
+export async function deleteWordKnowledge(word: string): Promise<void> {
+  return await globalDatabases?.delete("word_knowledge", word)
 }
