@@ -1,8 +1,7 @@
-import { useContext, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import React from "react";
 import { LeftSideBar } from "components/LeftSideBar";
-import { getWordKnowledge, Knowledge, setWordKnowledge, WordKnowledge } from "util/db";
-import { useEffect } from "react";
+import { WordKnowledge } from "util/db";
 import { useDispatch, useSelector } from "react-redux";
 import { selectedWkSlice } from "store";
 
@@ -18,8 +17,15 @@ export function Home() {
 }
 
 function Reader() {
-  const [text, _] = useState(localStorage.getItem("text") ?? "")
+  const text = useMemo(() => localStorage.getItem("text") ?? "", [])
   const lines = useMemo(() => text.split("\n"), [text]);
+  const dispatch = useDispatch()
+
+  useEffect(() => {
+    (async () => {
+      dispatch(selectedWkSlice.actions.update({ word: "", knowledge: 0 }))
+    })()
+  })
 
   return (
     <div className="flex flex-col gap-y-2 mx-auto max-w-2xl text-xl">
@@ -36,7 +42,7 @@ function ReaderLine({ line }: { line: string }) {
     var ret: string[] = []
     while (cur < str.length) {
       var end = cur + 1
-      while (end < str.length && is_word_char(str[cur]) == is_word_char(str[end])) {
+      while (end < str.length && is_word_char(str[cur]) === is_word_char(str[end])) {
         end++
       }
       ret.push(str.slice(cur, end))
@@ -88,4 +94,4 @@ const ReaderWordMemo = React.memo(({ wk }: { wk: WordKnowledge }) => {
     {word}
   </Variant>
 
-}, (prevProps, nextProps) => prevProps.wk.knowledge == nextProps.wk.knowledge && prevProps.wk.word == nextProps.wk.word)
+}, (prevProps, nextProps) => prevProps.wk.knowledge === nextProps.wk.knowledge && prevProps.wk.word === nextProps.wk.word)
