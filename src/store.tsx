@@ -32,7 +32,10 @@ export const dbSlice = createSlice({
     put: (state, action) => {
       const wk = action.payload as WordKnowledge
       state.value[wk.word] = wk
-    }
+    },
+    remove: (state, action) => {
+      delete state.value[action.payload]
+    },
   }
 })
 

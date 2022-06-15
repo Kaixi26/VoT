@@ -1,8 +1,10 @@
 import { MdDownload, MdUpload } from "react-icons/md"
-import { downloadDatabases, getWordKnowledges, uploadDatabases, WordKnowledge, WordKnowledgeDB } from "util/db"
+import { deleteWordKnowledge, downloadDatabases, getWordKnowledges, Knowledge, setWordKnowledge, uploadDatabases, WordKnowledge, WordKnowledgeDB } from "util/db"
 import CircularButton from "components/CircularButton"
 import { useEffect, useState } from "react";
 import { MdClose } from "react-icons/md"
+import { useDispatch, useSelector } from "react-redux";
+import { dbSlice } from "store";
 
 export default function Database() {
 
@@ -18,22 +20,24 @@ export default function Database() {
 }
 
 function ShowWordKnowledgeDB() {
-  return <></>
-  //const { db } = useWordKnowledgeDB()
-  //return <div className="flex flex-col gap-2">
-  //  {Object.values(db).map((wk, i) => <ShowWordKnowledge key={wk.word} wk={wk} />)}
-  //</div>
+  const db: WordKnowledgeDB = useSelector((selector: any) => selector.db.value)
+
+  return <div className="flex flex-col gap-2">
+    {Object.values(db).map((wk, i) => <ShowWordKnowledge key={i} wk={wk} />)}
+  </div>
 }
 
 function ShowWordKnowledge({ wk }: { wk: WordKnowledge }) {
-  return <></>
-  /*
-  const { updateWordKnowledge, removeWordKnowledge } = useWordKnowledgeDB()
   const { word, knowledge } = wk
+  const dispatch = useDispatch()
+
   return <div className="flex flex-row gap-5 items-center">
     <div>{word}</div>
     <select defaultValue={`${knowledge}`} onChange={async (event) => {
-      await updateWordKnowledge({ word, knowledge: parseInt(event.target.value) as any })
+      const newWk = { word, knowledge: parseInt(event.target.value) as Knowledge }
+      if (await setWordKnowledge(newWk) !== undefined) {
+        dispatch(dbSlice.actions.put(newWk))
+      }
     }}>
       <option value="-1">Ignore</option>
       <option value="1">1</option>
@@ -43,10 +47,11 @@ function ShowWordKnowledge({ wk }: { wk: WordKnowledge }) {
       <option value="5">Known</option>
     </select>
     <button onClick={async () => {
-      await removeWordKnowledge(word)
+      if (await deleteWordKnowledge(word) === undefined) {
+        dispatch(dbSlice.actions.remove(word))
+      }
     }}> <MdClose className="scale-125" /> </button>
   </div>
-  */
 }
 
 function DownloadDatabase() {

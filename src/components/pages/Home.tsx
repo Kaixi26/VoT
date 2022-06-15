@@ -19,7 +19,7 @@ export function Home() {
 
 function Reader() {
   const [text, _] = useState(localStorage.getItem("text") ?? "")
-  const lines = text.split("\n");
+  const lines = useMemo(() => text.split("\n"), [text]);
 
   return (
     <div className="flex flex-col gap-y-2 mx-auto max-w-2xl text-xl">
